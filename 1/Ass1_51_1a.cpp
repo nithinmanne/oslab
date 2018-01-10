@@ -1,6 +1,4 @@
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 using namespace std;
@@ -25,8 +23,7 @@ int main() {
     apip = pip[2][1]; pid[2] = fork();
   }
 	if(pid[2]==0) {
-		int ar[COUNT];
-    srand(apip);
+		int ar[COUNT]; srand(apip);
 		for(int i=0;i<COUNT;i++) ar[i] = rand();
 		qsort(ar, COUNT, sizeof(int), cmp);
 		for(int i=0;i<COUNT;i++) write(apip, &ar[i], sizeof(int));
