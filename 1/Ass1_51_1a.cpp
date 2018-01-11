@@ -1,20 +1,16 @@
 #include <iostream>
 #include <unistd.h>
-#include <sys/wait.h>
 using namespace std;
 
-int cmp(const void *a, const void *b)
-{
-    const int *ia = (const int *)a;
-    const int *ib = (const int *)b;
-    return *ia  - *ib;
+int cmp(const void *a, const void *b) {
+  return *(const int*)a  - *(const int*)b;
 }
 
 #define COUNT 100
 
 int main() {
-	pid_t pid[3] = {0, 0, 0}; int pip[3][2];
-	pipe(pip[0]); pipe(pip[1]); pipe(pip[2]);
+  pid_t pid[3] = {0, 0, 0}; int pip[3][2];
+  pipe(pip[0]); pipe(pip[1]); pipe(pip[2]);
   int apip = pip[0][1]; pid[0] = fork();
 	if(pid[0]!=0) {
     apip = pip[1][1]; pid[1] = fork();
