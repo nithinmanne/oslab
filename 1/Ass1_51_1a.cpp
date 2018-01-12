@@ -42,7 +42,7 @@ int main() {
                 else cmn = (cmn+2)%3;
             else if(u1) cmn = (cmn+1)%3;
             else if(u2) cmn = (cmn+2)%3;
-            cout<< i <<"\n";
+            cout<<i<<"\n";
 		}
 	}
 }
