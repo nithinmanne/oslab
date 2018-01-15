@@ -10,7 +10,13 @@ int main()
 {
     string comm;
     while(true) {
-        cout<<">>> ";
+        cout<<"A. Run an internal command\n";
+        cout<<"B. Run an external command\n";
+        cout<<"C. Run an external command by redirecting standard input from a file\n";
+        cout<<"D. Run an external command by redirecting standard output to a file\n";
+        cout<<"E. Run an external command in the background\n";
+        cout<<"F. Run several external commands in the pipe mode\n";
+        cout<<"G. Quit the shell\n";
         getline(cin, comm);
         if(comm==EXIT) break;
         int x = fork();
