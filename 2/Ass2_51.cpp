@@ -1,13 +1,15 @@
 #include <iostream>
+#include <vector>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/fcntl.h>
 
 using namespace std;
 
-#define EXIT "quit"
 #define W_MODE "Error! Invalid Mode!\n"
 #define W_COMM "Error! Invalid Command!\n"
+
+int run_int(string);
 
 bool invalid(const string &mode) {
     if(mode.length()!=1) return true;
@@ -30,10 +32,22 @@ int parse_red(const string &comm, char sep, string *out) {
     return 0;
 }
 
+vector<string> parse_pip(string comm) {
+    vector<string> out;
+    long loc;
+    while((loc=comm.find('|'))!=-1) {
+        out.push_back(comm.substr(0, (unsigned)loc));
+        comm = comm.substr((unsigned)loc+1, comm.length());
+    }
+    out.push_back(comm);
+    return out;
+}
+
 int main()
 {
     string mode, comm, comm_s[2];
-    int status, x;
+    vector <string> comm_p;
+    int status, x, in, out, pip[2];
     while(true) {
         if(comm!=W_MODE && comm!=W_COMM) {
             cout << "A. Run an internal command\n";
@@ -55,54 +69,99 @@ int main()
             if (mode[0] == 'G')
                 break;
         }
-        cout<<"Enter Command: ";
+        cout << "Enter Command: ";
         getline(cin, comm);
         switch(mode[0]) {
             case 'A':
+                run_int(comm);
                 break;
             case 'B':
                 x = fork();
-                if(x==0) execlp("sh", "sh", "-c", comm.c_str(), nullptr);
+                if(x==0) {
+                    execlp("sh", "sh", "-c", comm.c_str(), nullptr);
+                    exit(1);
+                }
                 else wait(&status);
                 break;
             case 'C':
-                parse_red(comm, '<', comm_s);
+                if(parse_red(comm, '<', comm_s)) {
+                    cout << W_COMM << "Must have one '<'\n";
+                    comm = W_COMM;
+                }
                 x = fork();
                 if(x==0) {
                     fclose(stdin);
                     dup(open(comm_s[1].c_str(), O_RDONLY));
                     execlp("sh", "sh", "-c", comm_s[0].c_str(), nullptr);
+                    exit(1);
                 }
                 else wait(&status);
                 break;
             case 'D':
-                parse_red(comm, '>', comm_s);
+                if(parse_red(comm, '>', comm_s)) {
+                    cout << W_COMM << "Must have one '>'\n";
+                    comm = W_COMM;
+                }
                 x = fork();
                 if(x==0) {
                     fclose(stdout);
                     remove(comm_s[1].c_str());
                     dup(open(comm_s[1].c_str(), O_CREAT | O_WRONLY));
                     execlp("sh", "sh", "-c", comm_s[0].c_str(), nullptr);
+                    exit(1);
                 }
                 else wait(&status);
                 break;
             case 'E':
                 x = (int)comm.find_last_not_of(' ');
                 if(comm[x]!='&') {
-                    cout<<W_COMM<<"Must end with &\n";
+                    cout << W_COMM << "Must end with &\n";
                     comm = W_COMM;
                 }
                 else {
                     comm = comm.substr(0, (unsigned)x);
                     cout<<comm;
                     x = fork();
-                    if (x == 0) execlp("sh", "sh", "-c", comm.c_str(), nullptr);
+                    if (x == 0) {
+                        execlp("sh", "sh", "-c", comm.c_str(), nullptr);
+                        exit(1);
+                    }
                 }
                 break;
             case 'F':
+                comm_p = parse_pip(comm);
+                in = -1;
+                out = -1;
+                for (const string &i : comm_p) {
+                    cout << "'" << i << "'\n";
+                    if(i!=comm_p.back()) {
+                        pipe(pip);
+                        out = pip[1];
+                    }
+                    x = fork();
+                    if (x == 0) {
+                        if(in!=-1) {
+                            fclose(stdin);
+                            dup(in);
+                        }
+                        if(out!=-1) {
+                            fclose(stdout);
+                            dup(out);
+                        }
+                        execlp("sh", "sh", "-c", comm.c_str(), nullptr);
+                        exit(1);
+                    }
+                    in = pip[0];
+                    out = -1;
+                }
+                for(int i=0;i<comm_p.size();i++) wait(&status);
                 break;
             default:
                 continue;
         }
     }
+}
+
+int run_int(string comm) {
+    cout<<comm;
 }
