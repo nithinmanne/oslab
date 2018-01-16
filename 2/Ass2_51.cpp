@@ -6,8 +6,12 @@
 
 using namespace std;
 
-#define W_MODE "Error! Invalid Mode!\n"
-#define W_COMM "Error! Invalid Command!\n"
+#ifndef DEBUG
+#define DEBUG false
+#endif
+
+#define W_MODE "Error! Invalid Mode.\n"
+#define W_COMM "Error! Invalid Command.\n"
 
 int run_int(string);
 
@@ -29,14 +33,17 @@ int parse_red(const string &comm, char sep, string *out) {
     out[1] = comm.substr((unsigned)loc+1, comm.length());
     unsigned long fns = out[1].find_first_not_of(' ');
     out[1] = out[1].substr(fns, out[1].length());
+    if(DEBUG) cout<<"Parsed Redirect\n"<<"`"<<out[0]<<"`"<<out[1]<<"`\n";
     return 0;
 }
 
 vector<string> parse_pip(string comm) {
     vector<string> out;
     long loc;
+    if(DEBUG) cout<<"Parsed Pipes\n";
     while((loc=comm.find('|'))!=-1) {
         out.push_back(comm.substr(0, (unsigned)loc));
+        if(DEBUG) cout<<"`"<<comm.substr(0, (unsigned)loc)<<"`\n";
         comm = comm.substr((unsigned)loc+1, comm.length());
     }
     out.push_back(comm);
@@ -46,6 +53,7 @@ vector<string> parse_pip(string comm) {
 int main()
 {
     string mode, comm, comm_s[2];
+    if(DEBUG) cout<<"Debug Build!\n";
     vector <string> comm_p;
     int status, x, in, out, pip[2];
     while(true) {
@@ -73,7 +81,10 @@ int main()
         getline(cin, comm);
         switch(mode[0]) {
             case 'A':
-                run_int(comm);
+                if(run_int(comm)) {
+                    cout << W_COMM;
+                    comm = W_COMM;
+                }
                 break;
             case 'B':
                 x = fork();
@@ -120,7 +131,7 @@ int main()
                 }
                 else {
                     comm = comm.substr(0, (unsigned)x);
-                    cout<<comm;
+                    if(DEBUG) cout << comm;
                     x = fork();
                     if (x == 0) {
                         execlp("sh", "sh", "-c", comm.c_str(), nullptr);
@@ -133,7 +144,7 @@ int main()
                 in = -1;
                 out = -1;
                 for (const string &i : comm_p) {
-                    cout << "'" << i << "'\n";
+                    if(DEBUG) cout << "'" << i << "'\n";
                     if(i!=comm_p.back()) {
                         pipe(pip);
                         out = pip[1];
@@ -163,5 +174,30 @@ int main()
 }
 
 int run_int(string comm) {
-    cout<<comm;
+    string func;
+    vector<string> para;
+    long loc = comm.find_first_not_of(' ');
+    if(loc==-1) return 1;
+    comm = comm.substr((unsigned)loc, comm.length());
+    loc = comm.find_first_of(' ');
+    if(loc==-1) loc = comm.length();
+    func = comm.substr(0, (unsigned)loc);
+    if(DEBUG) cout<<"Internal func\n`"<<func<<"`\n";
+    comm = comm.substr((unsigned)loc, comm.length());
+    if(DEBUG) cout<<"Remaining\n`"<<comm<<"`\n";
+    loc = comm.find_first_not_of(' ');
+    if(loc==-1) loc = comm.length();
+    comm = comm.substr((unsigned)loc, comm.length());
+    while(comm.length()>0) {
+        loc = comm.find_first_of(' ');
+        if(loc==-1) loc = comm.length();
+        para.push_back(comm.substr(0, (unsigned)loc));
+        if(DEBUG) cout<<"`"<<comm.substr(0, (unsigned)loc)<<"`\n";
+        comm = comm.substr((unsigned)loc, comm.length());
+        loc = comm.find_first_not_of(' ');
+        if(loc==-1) loc = comm.length();
+        comm = comm.substr((unsigned)loc, comm.length());
+    }
+    //TODO Write different functions for different func variable
+    return 0;
 }
