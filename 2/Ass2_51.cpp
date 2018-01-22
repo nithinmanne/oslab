@@ -2,7 +2,9 @@
 #include <vector>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <sys/fcntl.h>
+#include <cstring>
 
 using namespace std;
 
@@ -198,6 +200,40 @@ int run_int(string comm) {
         if(loc==-1) loc = comm.length();
         comm = comm.substr((unsigned)loc, comm.length());
     }
+
+    if(func=="chdir") {
+        if(para.size()!=1) return 1;
+        if(para[0][0]=='/') {
+            if(chdir(para[0].c_str()) == -1) return 1;
+        }
+        else {
+            char *cwd, *fwd;
+            cwd = (char*)malloc(4097);
+            getwd(cwd);
+            fwd = (char*)malloc(strlen(cwd)+strlen(para[0].c_str())+3);
+            strcpy(fwd, cwd);
+            strcat(fwd, ('/'+para[0]+'/').c_str());
+            if(chdir(fwd) == -1) return 1;
+        }
+    }
+    else if(func=="mkdir") {
+        if(para.empty()) return 1;
+        for(string &i: para) {
+            if(mkdir(i.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)==-1)
+                cout<<"Error creating directory"<<i<<endl;
+        }
+    }
+    else if(func=="rmdir") {
+        if(para.empty()) return 1;
+        for(string &i: para) {
+            if(rmdir(i.c_str())==-1)
+                cout<<"Error deleting directory"<<i<<endl;
+        }
+    }
+
+    else return 1;
+
     //TODO Write different functions for different func variable
+
     return 0;
 }
