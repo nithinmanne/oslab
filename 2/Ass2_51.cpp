@@ -233,7 +233,7 @@ int run_int(string comm) {
 
     else return 1;
 
-    //TODO Write different functions for different func variable
+    //TO!DO Write different functions for different func variable
 
     return 0;
 }
