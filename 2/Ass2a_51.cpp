@@ -61,34 +61,36 @@ int main() {
             }
             success = false;
             while(shm_adr[0]!=p) {
-                while(shm_adr[0]!=0);
+                while(shm_adr[0]!=0)
+                    usleep(100);
                 shm_adr[0] = p;
-                usleep(rand()%1000);
+                usleep(100);
             }
             for(i=0;i<BUF_SIZE;i++)
                 if(shm_adr[i+1]==-1) break;
             if(i==BUF_SIZE){
                 shm_adr[0] = 0;
-                usleep(rand()%5000);
+                usleep(1000);
                 continue;
             }
             success = true;
             shm_adr[i+1] = n;
             shm_adr[0] = 0;
-            printf("Producer %d: %d    Time: %d\n", p, n, (int)(time(nullptr)-start));
+            printf("Producer %d: %d\tTime: %d\n", p, n, (int)(time(nullptr)-start));
         }
         else {
             if(success) sleep((unsigned)rand()%6);
             success = false;
             int i;
             while(shm_adr[0]!=-c) {
-                while(shm_adr[0]!=0);
+                while(shm_adr[0]!=0)
+                    usleep(100);
                 shm_adr[0] = -c;
-                usleep(rand()%1000);
+                usleep(100);
             }
             if(shm_adr[1]==-1) {
                 shm_adr[0] = 0;
-                usleep(rand()%5000);
+                usleep(1000);
                 continue;
             }
             n = shm_adr[1];
@@ -97,7 +99,7 @@ int main() {
             shm_adr[BUF_SIZE] = -1;
             shm_adr[0] = 0;
             success = true;
-            printf("Consumer %d: %d    Time: %d\n", c, n, (int)(time(nullptr)-start));
+            printf("Consumer %d: %d\tTime: %d\n", c, n, (int)(time(nullptr)-start));
         }
     for(int i=0;i<WAIT_TIME;i++) {
         sleep(1);
