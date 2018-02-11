@@ -1,3 +1,6 @@
+/*
+Please compile with -std=c++11. This program is written in an IDE, where C++11 is the default, as it should be. I didn't check for compatibility with C++98.
+*/
 #include <iostream>
 #include <unistd.h>
 #include <csignal>
@@ -11,41 +14,99 @@ using namespace std;
 void *thr_func(void*);
 void handler(int);
 int *status;
+int *kstatus;
+int N;
+pthread_t *thr;
+pthread_mutex_t status_mutex;
 
 int main() {
     cout<<"Enter N: ";
-    int N;
     cin>>N;
     status = (int*)malloc(N*sizeof(int));
-    pthread_t *thr;
+    kstatus = (int*)malloc(N*sizeof(int));
+    for(int i=0;i<N;i++) status[i] = 0;
+    for(int i=0;i<N;i++) kstatus[i] = 0;
     thr = (pthread_t*)malloc((N+2)*sizeof(pthread_t));
+    pthread_mutex_init(&status_mutex, nullptr);
     for(int i=0;i<N+2;i++)
         if(pthread_create(&thr[i], nullptr, thr_func, (void*)(long)i));
     pthread_join(thr[0], nullptr);
+    sleep(1);
 }
 
 
 void *thr_func(void *type) {
     auto typ = (long)type;
     if(typ==0) {
-        printf("Scheduler\n");
-        for(int i=0;i<100000;i++) {
-            status[i%10]=i;
+        int cid = 0;
+        sleep(1);
+        while(true) {
+            pthread_mutex_lock(&status_mutex);
+            if(status[cid]!=-1) {
+                pthread_mutex_unlock(&status_mutex);
+                pthread_kill(thr[cid + 2], SIGUSR2);
+                pthread_mutex_lock(&status_mutex);
+                status[cid] = 1;
+                pthread_mutex_unlock(&status_mutex);
+                sleep(1);
+                if(kstatus[cid]==1) {
+                    pthread_mutex_lock(&status_mutex);
+                    status[cid] = -1;
+                    pthread_mutex_unlock(&status_mutex);
+                }
+                else {
+                    pthread_kill(thr[cid + 2], SIGUSR1);
+                    pthread_mutex_lock(&status_mutex);
+                    status[cid] = 0;
+                    pthread_mutex_unlock(&status_mutex);
+                }
+            }
+            else
+                pthread_mutex_unlock(&status_mutex);
+            cid=(cid+1)%N;
+            bool done = true;
+            pthread_mutex_lock(&status_mutex);
+            for(int i=0;i<N;i++)
+                if(status[i]!=-1) {
+                    done=false;
+                    break;
+                }
+            pthread_mutex_unlock(&status_mutex);
+            if(done) break;
         }
-        sleep(5);
-        printf("Scheduler\n");
         return (void*)nullptr;
     }
     else if(typ==1) {
-        printf("Reporter\n");
-        for(int i=0;i<100000;i++) {
-            for(int j=0;j<10;j++) {
-                printf("%d ", status[j]);
+        int *ostatus;
+        ostatus = (int*)malloc(N*sizeof(int));
+        pthread_mutex_lock(&status_mutex);
+        for(int i=0;i<N;i++) ostatus[i] = status[i];
+        pthread_mutex_unlock(&status_mutex);
+        while(true) {
+            for(int i=0;i<N;i++) {
+                pthread_mutex_lock(&status_mutex);
+                bool chk = status[i]==ostatus[i];
+                pthread_mutex_unlock(&status_mutex);
+                if (chk) continue;
+                pthread_mutex_lock(&status_mutex);
+                ostatus[i]=status[i];
+                pthread_mutex_unlock(&status_mutex);
+                printf("Worker %d ", i);
+                if(ostatus[i]==-1) printf("Terminated\n");
+                if(ostatus[i]==0) printf("Paused\n");
+                if(ostatus[i]==1) printf("Resumed\n");
+                fflush(stdout);
+                usleep(1000);
             }
-            printf("\n");
+            usleep(10000);
+            bool done = true;
+            for(int i=0;i<N;i++)
+                if(ostatus[i]!=-1) {
+                    done=false;
+                    break;
+                }
+            if(done) break;
         }
-        sleep(20);
-        printf("Reporter\n");
         return (void*)nullptr;
     }
     signal(SIGUSR1, handler);
@@ -58,7 +119,6 @@ void *thr_func(void *type) {
     qsort(rand_arr, 1000, sizeof(int), [](const void *a, const void *b) {
         int arg1 = *static_cast<const int*>(a);
         int arg2 = *static_cast<const int*>(b);
-
         if(arg1 < arg2) return -1;
         if(arg1 > arg2) return 1;
         return 0;
@@ -66,6 +126,9 @@ void *thr_func(void *type) {
     int sTime = 1 + (int)rand()%10;
     time_t t = time(nullptr);
     while(time(nullptr)-t<sTime);
+    pthread_mutex_lock(&status_mutex);
+    kstatus[typ-2] = 1;
+    pthread_mutex_unlock(&status_mutex);
     return (void*)nullptr;
 }
 
