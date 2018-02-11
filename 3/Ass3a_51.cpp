@@ -27,14 +27,14 @@ int main(int argc, char *argv[]) {
         cin>>N;
     }
     else
-        N = atoi(argv[1]);
+        N = (int)strtol(argv[1], nullptr, nullptr);
     prcs *process;
     process = (prcs*)malloc(N*sizeof(prcs));
     int ct = 0;
     minstd_rand rand;
-    rand.seed(time(nullptr));
+    rand.seed((unsigned)time(nullptr));
     for(int i=0;i<N;i++) {
-        process[i].cpu = 1+rand()%20;
+        process[i].cpu = 1+(int)rand()%20;
         process[i].ar_tm = ct;
         process[i].fn_tm = -1;
         process[i].cmp = false;
@@ -162,7 +162,7 @@ void rr(prcs *process, int N, int q) {
 }
 
 prcs *copy(const prcs *orig, int N) {
-    prcs *copy = (prcs*)malloc(N*sizeof(prcs));
+    auto *copy = (prcs*)malloc(N*sizeof(prcs));
     for(int i=0;i<N;i++) {
         copy[i].ar_tm = orig[i].ar_tm;
         copy[i].fn_tm = orig[i].fn_tm;
