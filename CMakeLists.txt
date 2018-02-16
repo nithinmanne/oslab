@@ -4,6 +4,7 @@ project(oslab)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=true")
 
+add_executable(template template.cpp)
 add_executable(1a 1/Ass1_51_1a.cpp)
 add_executable(1b 1/Ass1_51_1b.cpp)
 add_executable(2 2/Ass2_51.cpp)
